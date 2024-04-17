@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using static GameManager;
 
 public class MainManager : MonoBehaviour
 {
@@ -11,9 +12,13 @@ public class MainManager : MonoBehaviour
     public Rigidbody Ball;
 
     public Text ScoreText;
+    public Text BestScoreNameText;
     public GameObject GameOverText;
+    public GameObject PauseGameGUI;
     
     private bool m_Started = false;
+    private string m_PlayerName;
+    private int m_score;
     private int m_Points;
     
     private bool m_GameOver = false;
@@ -22,6 +27,18 @@ public class MainManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        if (GameManager.Instance != null)
+        {
+            //GameManager.Instance.LoadBestScore();
+            m_PlayerName = GameManager.Instance.PlayerNameBest;
+            m_score = GameManager.Instance.scoreBest;
+            BestScoreNameText.text = $"Best Score : {m_PlayerName} : {m_score}";
+        }
+        else
+        {
+            m_PlayerName= string.Empty;
+        }
+
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
         
@@ -60,6 +77,19 @@ public class MainManager : MonoBehaviour
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
         }
+
+        if (Input.GetKeyDown(KeyCode.Escape) && GameManager.Instance.currentState == GameState.inGame)
+        {
+            PauseGame();
+            
+            
+        }
+        else if (Input.GetKeyDown(KeyCode.Escape) && GameManager.Instance.currentState == GameState.inPause)
+        {
+            ResumeGame();
+            
+            
+        }
     }
 
     void AddPoint(int point)
@@ -68,9 +98,41 @@ public class MainManager : MonoBehaviour
         ScoreText.text = $"Score : {m_Points}";
     }
 
+    public void ShowBestScore()
+    {
+        if (GameManager.Instance.IsBestScore(m_Points))
+        {
+            GameManager.Instance.PlayerNameBest = GameManager.Instance.CurrentPlayerName;
+            GameManager.Instance.scoreBest = m_Points;
+            BestScoreNameText.text = $"Best Score : {GameManager.Instance.CurrentPlayerName} : {m_Points}";
+        }
+
+        GameManager.Instance.HandleHighScore(GameManager.Instance.CurrentPlayerName, m_Points);
+        GameManager.Instance.SaveBestScore();
+    }
+
     public void GameOver()
     {
         m_GameOver = true;
         GameOverText.SetActive(true);
+    }
+
+    public void PauseGame()
+    {
+        GameManager.Instance.currentState = GameState.inPause;
+        Time.timeScale = 0;
+        PauseGameGUI.SetActive(true);
+    }
+
+    public void ResumeGame()
+    {
+        GameManager.Instance.currentState = GameState.inGame;
+        Time.timeScale = 1;
+        PauseGameGUI.SetActive(false);
+    }
+
+    public void BackMenu()
+    {
+        SceneManager.LoadScene(0);
     }
 }
